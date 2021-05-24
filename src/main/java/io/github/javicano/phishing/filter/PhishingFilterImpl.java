@@ -3,10 +3,12 @@ package io.github.javicano.phishing.filter;
 import java.io.File;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 
 import org.apache.james.mime4j.MimeException;
 
+import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
@@ -26,41 +28,60 @@ class PhishingFilterImpl implements PhishingFilter {
 	}
 
 	@Override
-	public boolean isPhishingEmail(File email) throws StackOverflowError, MimeException {
+	public PhishingPrediction isPhishingEmail_Stacked(File email) throws StackOverflowError, MimeException, PredictException, IOException {
 		EasyPredictModelWrapper model;
 		try {
 			URL url = getClass().getClassLoader().getResource("./models/StackedEnsemble_AllModels_AutoML_20210516_182200.zip");
 			model = new EasyPredictModelWrapper(MojoModel.load(url.getPath()));
 			
-			Features features = this.getFeatures(email);
-			
-			RowData row = new RowData();
-			String[] fieldNames = features.fieldNames();
-			String[] featuresArray = features.toArray();
-			for (int i = 0; i < fieldNames.length; i ++) {
-				row.put(fieldNames[i], featuresArray[i]);
-			}
-			
-			BinomialModelPrediction p = model.predictBinomial(row);	
-			System.out.println("Class probabilities: ");
-			for (int i = 0; i < p.classProbabilities.length; i++) {
-				if (i == 0) {
-					System.out.println("  False:" + p.classProbabilities[i]);
-				} else if ( i == 1) {
-					System.out.println("  True:" + p.classProbabilities[i]);
-				}
-				
-			}
-			System.out.println("Is phishing?: " + p.label);
-			System.out.println("");
-			return p.label.equalsIgnoreCase("1") ? true : false;
+			return getPhishingPrediction(model, email); 
 		
 		} catch (PredictException | IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
-			return false;
+			throw e;
+		}    
+	}
+	
+	@Override
+	public PhishingPrediction isPhishingEmail_GBM(File email) throws StackOverflowError, MimeException, PredictException, IOException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException  {
+		String modelClassName = "io.github.javicano.phishing.filter.GBM_grid__1_AutoML_20210523_175248_model_15";
+		EasyPredictModelWrapper model;
+		try {
+			GenModel rawModel = (hex.genmodel.GenModel) Class.forName(modelClassName).getDeclaredConstructor().newInstance();
+			model = new EasyPredictModelWrapper(rawModel);
+			
+			return getPhishingPrediction(model, email);
+		
+		} catch (PredictException | IOException e) {
+			e.printStackTrace();
+			throw e;
 		}
 	     
+	}
+	
+	private PhishingPrediction getPhishingPrediction(EasyPredictModelWrapper model, File email) throws StackOverflowError, MimeException, IOException, PredictException {
+		Features features = this.getFeatures(email);
+		
+		RowData row = new RowData();
+		String[] fieldNames = features.fieldNames();
+		String[] featuresArray = features.toArray();
+		for (int i = 0; i < fieldNames.length; i ++) {
+			row.put(fieldNames[i], featuresArray[i]);
+		}
+		
+		BinomialModelPrediction p = model.predictBinomial(row);	
+		PhishingPrediction phishingPrediction = new PhishingPrediction();
+		for (int i = 0; i < p.classProbabilities.length; i++) {
+			if (i == 0) {
+				phishingPrediction.setFalseProbabilities(p.classProbabilities[i]);
+			} else if ( i == 1) {
+				phishingPrediction.setTrueProbabilities(p.classProbabilities[i]);
+			}
+			
+		}
+		phishingPrediction.setPhishing(p.label.equalsIgnoreCase("True") ? true : false);
+		
+		return phishingPrediction;
 	}
 
 }
