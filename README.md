@@ -64,15 +64,15 @@ Get an instance of PhishingFilter class:
 
 Use getFeatures(File file) method to extract features from email file
 ```java
-  Features phishingFilter.getFeatures(file);
+  Features features = phishingFilter.getFeatures(file);
 ```
 
 Call isPhishingEmail_Stacked(File file) method to classify into phishing/ham email using Stacked model 
 ```java
-  PhishingPrediction phishingFilter.isPhishingEmail_Stacked(file);
+  PhishingPrediction phishingPrediction = phishingFilter.isPhishingEmail_Stacked(file);
 ```
 
 Call isPhishingEmail_GBM(File file) method to classify into phishing/ham email using Gradient Boosting Machine model 
 ```java
-  PhishingPrediction phishingFilter.isPhishingEmail_GBM(file);
+  PhishingPrediction phishingPrediction = phishingFilter.isPhishingEmail_GBM(file);
 ```
