@@ -35,7 +35,7 @@ This program is built with Java 12. You can check your version of Java by enteri
 java -version
 ```
 
-This is a Maven project, so you must check Maven is installed in your local:
+This is a Maven project (3.8.1), so you must check Maven is installed in your local:
 ```sh
 mvn -version
 ```
