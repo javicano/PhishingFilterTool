@@ -1,6 +1,6 @@
 # Phishing Filter Tool
 
-This library provides the following functinalities:
+This library provides the following functionalities:
 - Email features extraction for Machine Learning purpose
 - Phishing email prediction using models genetared by H2O AutoML process
 
